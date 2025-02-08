@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import streamlit as st
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
@@ -50,7 +52,7 @@ st.write("Optimize your media investment based on impact, attention, and audienc
 st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 
 # Tabs for structured navigation
-tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Manual Adjustments"])
+tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Adjustments"])
 
 # Campaign Briefing Tab
 with tab1:
@@ -78,9 +80,20 @@ with tab2:
         else:
             st.write("No optimal campaign found based on current constraints. Try adjusting your inputs.")
 
-# Manual Adjustments Tab
+# Insights & Adjustments Tab
 with tab3:
-    st.subheader("Modify Media Plan")
+    st.subheader("Media Plan Insights & Adjustments")
+    st.write("Visualizing media impact and optimizing campaign strategy")
+    
+    # Visualization - Budget vs. Lift Difference
+    fig, ax = plt.subplots()
+    sns.scatterplot(data=data, x='Budget', y='Lift_Difference', hue='Campaign', ax=ax)
+    plt.xlabel("Budget")
+    plt.ylabel("Brand Lift")
+    plt.title("Impact of Budget on Brand Lift by Media Channel")
+    st.pyplot(fig)
+    
+    # Manual Adjustments
     selected_channel_adjust = st.selectbox("Adjust Media Channel", options=campaigns)
     adjusted_budget = st.number_input("Adjust Budget", min_value=5000, max_value=50000, step=5000)
     adjusted_frequency = st.number_input("Adjust Frequency", min_value=1, max_value=10, step=1)
