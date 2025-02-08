@@ -44,20 +44,21 @@ st.write("Predicting Brand Lift and Optimizing Media Selection")
 # Model Performance Display
 st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 
-# Data Display
-st.subheader("Top Performing Campaigns")
-data_sorted = data.sort_values(by='Lift_Difference', ascending=False)
-st.dataframe(data_sorted.head(10))
+# Advertiser Campaign Goal Input
+st.subheader("Define Campaign Objectives")
+selected_campaign_type = st.selectbox("Select Campaign Type:", options=campaigns)
+selected_audience_goal = st.selectbox("Select Audience Target:", options=audience_segments)
+selected_budget = st.slider("Select Budget Range:", min_value=5000, max_value=50000, step=5000)
 
-# Filtered View
-st.subheader("Filter by Media Channel and Audience Segment")
-selected_channel = st.selectbox("Select Campaign Type:", options=campaigns)
-selected_audience = st.selectbox("Select Audience Segment:", options=audience_segments)
-st.dataframe(data[(data['Campaign'] == selected_channel) & (data['Audience_Segment'] == selected_audience)])
+# AI-Powered Media Recommendation
+st.subheader("AI-Generated Media Plan")
+predicted_campaign = data[(data['Campaign'] == selected_campaign_type) & (data['Audience_Segment'] == selected_audience_goal)]
+predicted_campaign = predicted_campaign[predicted_campaign['Budget'] <= selected_budget]
+predicted_campaign = predicted_campaign.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(1)
 
-# Suggested Campaign Activation
-st.subheader("Recommended Media Plan")
-suggested_campaign = data_sorted.head(1)
-st.write("Based on the highest impact and attention score, we recommend the following:")
-st.dataframe(suggested_campaign[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Audience_Segment', 'Conversion_Likelihood']])
-st.write("This campaign can be activated in the DSP for optimal performance.")
+if not predicted_campaign.empty:
+    st.write("Based on your objectives, we recommend the following:")
+    st.dataframe(predicted_campaign[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Audience_Segment', 'Conversion_Likelihood']])
+    st.write("This campaign can be activated in the DSP for optimal performance.")
+else:
+    st.write("No matching campaign found for the given budget and targeting. Try adjusting your inputs.")
