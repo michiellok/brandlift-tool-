@@ -49,39 +49,43 @@ st.write("Optimize your media investment based on impact, attention, and audienc
 # Model Performance Display
 st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 
-# Advertiser Campaign Goal Input
-st.subheader("Define Campaign Objectives")
-campaign_name = st.text_input("Campaign Name")
-selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
-selected_audience_goal = st.selectbox("Select Audience Target:", options=audience_segments)
-selected_budget = st.slider("Select Budget Range:", min_value=5000, max_value=50000, step=5000)
-selected_frequency = st.slider("Select Desired Frequency:", min_value=1, max_value=10, step=1)
-selected_cpm_cap = st.slider("Select CPM Cap:", min_value=5, max_value=50, step=1)
+# Tabs for structured navigation
+tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Manual Adjustments"])
 
-# AI-Powered Media Recommendation
-st.subheader("AI-Generated Media Plan")
-predicted_campaign = data[(data['Audience_Segment'] == selected_audience_goal) &
-                          (data['Budget'] <= selected_budget) &
-                          (data['Frequency'] <= selected_frequency) &
-                          (data['CPM'] <= selected_cpm_cap)]
-predicted_campaign = predicted_campaign.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(3)
+# Campaign Briefing Tab
+with tab1:
+    st.subheader("Define Campaign Objectives")
+    campaign_name = st.text_input("Campaign Name")
+    selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
+    selected_audience_goal = st.multiselect("Select Audience Targets:", options=audience_segments)
+    selected_budget = st.number_input("Enter Total Budget", min_value=5000, max_value=50000, step=5000)
+    selected_frequency = st.number_input("Enter Desired Frequency", min_value=1, max_value=10, step=1)
+    selected_cpm_cap = st.number_input("Enter CPM Cap", min_value=5, max_value=50, step=1)
+    selected_channels = st.multiselect("Select Media Channels:", options=campaigns)
 
-if not predicted_campaign.empty:
-    st.write("Based on your objectives, we recommend the following media plan:")
-    st.dataframe(predicted_campaign[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Audience_Segment', 'Conversion_Likelihood', 'CPM', 'Frequency']])
-    st.write("This plan can be fine-tuned before activation in the DSP.")
-else:
-    st.write("No optimal campaign found based on current constraints. Try adjusting your inputs.")
+# AI Media Plan Tab
+with tab2:
+    st.subheader("AI-Generated Media Plan")
+    if selected_audience_goal and selected_channels:
+        predicted_campaign = data[(data['Audience_Segment'].isin(selected_audience_goal)) &
+                                  (data['Campaign'].isin(selected_channels)) &
+                                  (data['Budget'] <= selected_budget) &
+                                  (data['Frequency'] <= selected_frequency) &
+                                  (data['CPM'] <= selected_cpm_cap)]
+        predicted_campaign = predicted_campaign.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(5)
+        if not predicted_campaign.empty:
+            st.dataframe(predicted_campaign[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Audience_Segment', 'Conversion_Likelihood', 'CPM', 'Frequency']])
+        else:
+            st.write("No optimal campaign found based on current constraints. Try adjusting your inputs.")
 
-# Manual Adjustments
-st.subheader("Manual Media Plan Adjustments")
-st.write("Modify media allocation before finalizing the plan")
-selected_channel_adjust = st.selectbox("Adjust Media Channel", options=campaigns)
-adjusted_budget = st.slider("Adjust Budget:", min_value=5000, max_value=50000, step=5000)
-adjusted_frequency = st.slider("Adjust Frequency:", min_value=1, max_value=10, step=1)
-adjusted_cpm = st.slider("Adjust CPM:", min_value=5, max_value=50, step=1)
-
-st.write(f"Your manually adjusted media allocation: {selected_channel_adjust} - Budget: {adjusted_budget}, Frequency: {adjusted_frequency}, CPM: {adjusted_cpm}")
+# Manual Adjustments Tab
+with tab3:
+    st.subheader("Modify Media Plan")
+    selected_channel_adjust = st.selectbox("Adjust Media Channel", options=campaigns)
+    adjusted_budget = st.number_input("Adjust Budget", min_value=5000, max_value=50000, step=5000)
+    adjusted_frequency = st.number_input("Adjust Frequency", min_value=1, max_value=10, step=1)
+    adjusted_cpm = st.number_input("Adjust CPM", min_value=5, max_value=50, step=1)
+    st.write(f"Your manually adjusted media allocation: {selected_channel_adjust} - Budget: {adjusted_budget}, Frequency: {adjusted_frequency}, CPM: {adjusted_cpm}")
 
 # DSP Activation Simulation
 st.subheader("Activate in DSP")
@@ -89,11 +93,11 @@ if st.button("Generate DSP Export File"):
     export_data = pd.DataFrame({
         'Campaign Name': [campaign_name],
         'Objective': [selected_objective],
-        'Audience': [selected_audience_goal],
+        'Audience': [', '.join(selected_audience_goal)],
         'Budget': [adjusted_budget],
         'Frequency': [adjusted_frequency],
         'CPM': [adjusted_cpm],
-        'Media Channel': [selected_channel_adjust]
+        'Media Channels': [', '.join(selected_channels)]
     })
     export_data.to_csv("media_plan.csv", index=False)
     st.success("Your media plan has been exported for DSP activation!")
