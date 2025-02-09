@@ -63,36 +63,37 @@ st.write("Optimize your media investment based on impact, attention, and audienc
 st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 
 # Tabs for structured navigation
-tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Benchmarking"])
+tab1, tab2, tab3, tab4 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Benchmarking", "Deep-Dive Analysis"])
 
-# Insights & Benchmarking Tab
-with tab3:
-    st.subheader("Media Plan Insights & Industry Benchmarking")
+# Deep-Dive Analysis Tab
+with tab4:
+    st.subheader("Advanced Media Performance Analysis")
     
-    # Visualization - Budget vs. Lift Difference
+    # Performance Distribution by Campaign Type
+    st.subheader("Brand Lift Distribution by Campaign Type")
     fig, ax = plt.subplots()
-    sns.barplot(data=data, x='Campaign', y='Lift_Difference', ci=None, ax=ax)
+    sns.boxplot(data=data, x='Campaign', y='Lift_Difference', ax=ax)
     plt.xlabel("Campaign Channel")
     plt.ylabel("Brand Lift Difference")
-    plt.title("Comparison of Brand Lift Across Media Channels")
     st.pyplot(fig)
     
-    # Correlation Heatmap
-    st.subheader("Correlation Between Key Metrics")
+    # Attention vs. Conversion Scatterplot
+    st.subheader("Correlation Between Attention and Conversion Likelihood")
     fig, ax = plt.subplots()
-    sns.heatmap(data[['Lift_Difference', 'Attention_Score', 'Budget', 'Conversion_Likelihood']].corr(), annot=True, cmap='coolwarm', ax=ax)
+    sns.scatterplot(data=data, x='Attention_Score', y='Conversion_Likelihood', hue='Campaign', ax=ax)
+    plt.xlabel("Attention Score")
+    plt.ylabel("Conversion Likelihood")
     st.pyplot(fig)
     
-    # Industry Benchmark Comparison
-    st.subheader("Industry Benchmarks vs. Campaign Performance")
+    # Performance Against Benchmarks
+    st.subheader("Industry Benchmarks vs. Actual Performance")
     merged_df = data.groupby('Campaign')[['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood']].mean().reset_index()
     merged_df = merged_df.merge(benchmark_df, on='Campaign', suffixes=('_Actual', '_Benchmark'))
     st.dataframe(merged_df)
     
     # AI Recommendations
-    st.subheader("Optimization Suggestions")
+    st.subheader("Strategic Optimization Suggestions")
     highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
-    st.write(f"Based on our analysis, the best performing media channel is **{highest_lift['Campaign']}** with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
-    st.write("Consider allocating more budget to high-performing channels while optimizing attention scores for maximum impact.")
-    
-    st.write("Comparing your results against industry benchmarks, channels performing below industry averages should be optimized or reallocated for better efficiency.")
+    st.write(f"Our AI recommends increasing investment in **{highest_lift['Campaign']}**, which has an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+    st.write("To improve campaign efficiency, consider reallocating budgets from underperforming channels and optimizing CPM values.")
+
