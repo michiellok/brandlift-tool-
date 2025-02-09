@@ -54,7 +54,7 @@ st.write("Optimize your media investment based on impact, attention, and audienc
 st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 
 # Tabs for structured navigation
-tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Adjustments"])
+tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Analysis"])
 
 # Campaign Briefing Tab
 with tab1:
@@ -84,42 +84,30 @@ with tab2:
         else:
             st.write("No optimal campaign found based on current constraints. Try adjusting your inputs.")
 
-# Insights & Adjustments Tab
+# Insights & Analysis Tab
 with tab3:
-    st.subheader("Media Plan Insights & Adjustments")
-    st.write("Visualizing media impact and optimizing campaign strategy")
+    st.subheader("Media Plan Insights & Optimization Suggestions")
     
     # Visualization - Budget vs. Lift Difference
     fig, ax = plt.subplots()
-    sns.scatterplot(data=data, x='Budget', y='Lift_Difference', hue='Campaign', ax=ax)
-    plt.xlabel("Budget")
-    plt.ylabel("Brand Lift")
-    plt.title("Impact of Budget on Brand Lift by Media Channel")
+    sns.barplot(data=data, x='Campaign', y='Lift_Difference', ci=None, ax=ax)
+    plt.xlabel("Campaign Channel")
+    plt.ylabel("Brand Lift Difference")
+    plt.title("Comparison of Brand Lift Across Media Channels")
     st.pyplot(fig)
     
-    # Manual Adjustments
-    selected_channel_adjust = st.selectbox("Adjust Media Channel", options=campaigns)
-    adjusted_budget = st.number_input("Adjust Budget", min_value=5000, max_value=50000, step=5000)
-    adjusted_frequency = st.number_input("Adjust Frequency", min_value=1, max_value=10, step=1)
-    adjusted_cpm = st.number_input("Adjust CPM", min_value=5, max_value=50, step=1)
-    adjusted_campaign_duration = st.number_input("Adjust Campaign Duration (days)", min_value=7, max_value=90, step=1)
-    st.write(f"Your manually adjusted media allocation: {selected_channel_adjust} - Budget: {adjusted_budget}, Frequency: {adjusted_frequency}, CPM: {adjusted_cpm}, Duration: {adjusted_campaign_duration} days")
+    # Correlation Heatmap
+    st.subheader("Correlation Between Key Metrics")
+    fig, ax = plt.subplots()
+    sns.heatmap(data[['Lift_Difference', 'Attention_Score', 'Budget', 'Conversion_Likelihood']].corr(), annot=True, cmap='coolwarm', ax=ax)
+    st.pyplot(fig)
+    
+    # AI Recommendations
+    st.subheader("Optimization Suggestions")
+    highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
+    st.write(f"Based on our analysis, the best performing media channel is **{highest_lift['Campaign']}** with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+    st.write("Consider allocating more budget to high-performing channels while optimizing attention scores for maximum impact.")
 
-# DSP Activation Simulation
-st.subheader("Activate in DSP")
-if st.button("Generate DSP Export File"):
-    export_data = pd.DataFrame({
-        'Campaign Name': [campaign_name],
-        'Objective': [selected_objective],
-        'Audience': [', '.join(selected_audience_goal)],
-        'Budget': [adjusted_budget],
-        'Frequency': [adjusted_frequency],
-        'CPM': [adjusted_cpm],
-        'Campaign Duration': [adjusted_campaign_duration],
-        'Media Channels': [', '.join(selected_channels)]
-    })
-    export_data.to_csv("media_plan.csv", index=False)
-    st.success("Your media plan has been exported for DSP activation!")
 
 
 
