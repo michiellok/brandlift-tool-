@@ -65,34 +65,41 @@ st.write("Maximize your media investment with AI-driven insights and optimizatio
 # Tabs for structured navigation
 tab1, tab2, tab3, tab4 = st.tabs(["📌 Campaign Setup", "📊 AI Media Plan", "📈 Insights & Benchmarking", "🔍 Deep-Dive Analysis"])
 
-# Insights & Benchmarking Tab
-with tab3:
-    st.header("📈 Brand Uplift Analysis vs. Benchmark")
-    selected_media = st.selectbox("Select Media Channel", options=campaigns)
-    brand_lift_adjustment = st.slider("Adjust Brand Uplift", -0.05, 0.05, 0.0, step=0.01)
-    
-    # Get actual and benchmark brand uplift
-    actual_lift = data[data['Campaign'] == selected_media]['Lift_Difference'].mean()
-    benchmark_lift = benchmark_df[benchmark_df['Campaign'] == selected_media]['Avg_Brand_Lift'].values[0]
-    adjusted_lift = actual_lift + brand_lift_adjustment
-    
-    # Display uplift values
-    st.metric("Actual Brand Uplift", f"{actual_lift:.2%}")
-    st.metric("Benchmark Brand Uplift", f"{benchmark_lift:.2%}")
-    st.metric("Adjusted Brand Uplift", f"{adjusted_lift:.2%}")
-    
-    # Visualization
+# Campaign Setup Tab
+with tab1:
+    st.header("🎯 Define Campaign Objectives")
+    campaign_name = st.text_input("Campaign Name")
+    selected_objective = st.selectbox("Select Campaign Objective", options=objectives)
+    selected_audience = st.multiselect("Select Audience Segments", options=audience_segments)
+    selected_budget = st.slider("Total Budget", 5000, 50000, 25000)
+    selected_frequency = st.slider("Desired Frequency", 1, 10, 3)
+    selected_cpm_cap = st.slider("CPM Cap", 5, 50, 25)
+    selected_campaign_duration = st.slider("Campaign Duration (days)", 7, 90, 30)
+    selected_channels = st.multiselect("Select Media Channels", options=campaigns, default=campaigns)
+
+# AI Media Plan Tab
+with tab2:
+    st.header("📊 AI-Generated Media Plan")
+    if selected_audience and selected_channels:
+        filtered_data = data[(data['Audience_Segment'].isin(selected_audience)) & (data['Campaign'].isin(selected_channels))]
+        filtered_data = filtered_data[(filtered_data['Budget'] <= selected_budget) & (filtered_data['Frequency'] <= selected_frequency) & (filtered_data['CPM'] <= selected_cpm_cap) & (filtered_data['Campaign_Duration'] <= selected_campaign_duration)]
+        st.dataframe(filtered_data[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Conversion_Likelihood', 'CPM', 'Frequency', 'Campaign_Duration']])
+    else:
+        st.warning("⚠️ Please complete the campaign setup first!")
+
+# Deep-Dive Analysis Tab
+with tab4:
+    st.header("🔍 Advanced Media Performance Analysis")
+    st.subheader("🧐 Attention Score vs. Conversion Likelihood")
     fig, ax = plt.subplots()
-    sns.barplot(x=['Actual', 'Benchmark', 'Adjusted'], y=[actual_lift, benchmark_lift, adjusted_lift], palette=['blue', 'red', 'green'])
-    plt.ylabel("Brand Uplift")
-    plt.title(f"Brand Uplift Comparison for {selected_media}")
+    sns.scatterplot(data=data, x='Attention_Score', y='Conversion_Likelihood', hue='Campaign', ax=ax)
+    plt.xlabel("Attention Score")
+    plt.ylabel("Conversion Likelihood")
     st.pyplot(fig)
     
-    # AI Recommendation
-    if adjusted_lift > benchmark_lift:
-        st.success(f"🚀 AI suggests increasing investment in **{selected_media}**, as adjusted uplift ({adjusted_lift:.2%}) is above industry benchmark.")
-    else:
-        st.warning(f"⚠️ AI suggests reviewing investment in **{selected_media}**, as adjusted uplift ({adjusted_lift:.2%}) is below industry benchmark.")
+    highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
+    st.success(f"🚀 AI suggests increasing investment in **{highest_lift['Campaign']}**, with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+
 
 
 
