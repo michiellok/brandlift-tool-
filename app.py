@@ -1,116 +1,88 @@
+import streamlit as st
+import plotly.express as px
 import pandas as pd
 import numpy as np
-import streamlit as st
-import matplotlib.pyplot as plt
-import seaborn as sns
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
 
-# Generate Simulated Dummy Data
-np.random.seed(42)
-campaigns = ['CTV', 'DOOH', 'Social', 'Display', 'Retail Media']
-audience_segments = ['Young Adults', 'High Income', 'Gamers', 'Parents', 'Tech Enthusiasts']
-objectives = ['Awareness', 'Consideration', 'Preference', 'Intent']
-budgets = np.random.randint(5000, 50000, size=200)
-exposed_lift = np.random.uniform(0.01, 0.15, size=200)
-non_exposed_lift = np.random.uniform(0.005, 0.08, size=200)
-media_channel = np.random.choice(campaigns, size=200)
-attention_scores = np.random.uniform(0.1, 1.0, size=200)
-audience_segment = np.random.choice(audience_segments, size=200)
-conversion_likelihood = np.random.uniform(0.01, 0.5, size=200)
-cpm = np.random.uniform(5, 50, size=200)
-frequency = np.random.randint(1, 10, size=200)
+# Configuratie voor strak en professioneel design
+st.set_page_config(page_title="Media Budget Allocatie Dashboard", layout="wide")
 
-data = pd.DataFrame({
-    'Campaign': media_channel,
-    'Budget': budgets,
-    'Exposed_Lift': exposed_lift,
-    'Non_Exposed_Lift': non_exposed_lift,
-    'Lift_Difference': exposed_lift - non_exposed_lift,
-    'Attention_Score': attention_scores,
-    'Audience_Segment': audience_segment,
-    'Conversion_Likelihood': conversion_likelihood,
-    'CPM': cpm,
-    'Frequency': frequency
-})
+st.markdown("""
+    <style>
+        .main {background-color: #f5f7fa;}
+        .stButton>button {border-radius:10px; padding:10px; background:#005b96; color:white; font-size:16px;}
+        .stSlider>div>div>div>div {background: #005b96;}
+        .stSelectbox>div {border-radius:10px;}
+        .metric-title {font-weight: bold; font-size: 18px; color: #005b96;}
+        .metric-value {font-size: 26px; font-weight: bold;}
+    </style>
+""", unsafe_allow_html=True)
 
-# Train Machine Learning Model to Predict Brand Lift
-X = data[['Budget', 'Attention_Score', 'Conversion_Likelihood', 'CPM', 'Frequency']]
-y = data['Lift_Difference']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = LinearRegression()
-model.fit(X_train, y_train)
-y_pred = model.predict(X_test)
-mae = mean_absolute_error(y_test, y_pred)
+# Titel
+st.title("📊 Media Budget Allocatie Dashboard")
 
-# Streamlit Dashboard UI
-st.title("AI-Powered Media Planning Dashboard")
-st.write("Optimize your media investment based on impact, attention, and audience insights")
+# Tabs
+tab1, tab2, tab3 = st.tabs(["📊 Overzicht", "📈 Voorspellingen & Scenario’s", "🚀 Activatie & Export"])
 
-# Model Performance Display
-st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
-
-# Tabs for structured navigation
-tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Adjustments"])
-
-# Campaign Briefing Tab
 with tab1:
-    st.subheader("Define Campaign Objectives")
-    campaign_name = st.text_input("Campaign Name")
-    selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
-    selected_audience_goal = st.multiselect("Select Audience Targets:", options=audience_segments)
-    selected_budget = st.number_input("Enter Total Budget", min_value=5000, max_value=50000, step=5000)
-    selected_frequency = st.number_input("Enter Desired Frequency", min_value=1, max_value=10, step=1)
-    selected_cpm_cap = st.number_input("Enter CPM Cap", min_value=5, max_value=50, step=1)
-    selected_channels = st.multiselect("Select Media Channels:", options=campaigns)
+    st.subheader("📊 Campagne Overzicht")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        adverteerder = st.text_input("Adverteerder Naam")
+        sector = st.selectbox("Sector", ["FMCG", "Automotive", "Finance & Insurance", "Tech & Electronics", "Luxury & Fashion", "Media & Entertainment", "Healthcare & Pharma", "Telecom", "Travel & Hospitality", "E-commerce & Marketplaces"])
+    with col2:
+        campagne_doel = st.selectbox("Campagne Doel", ["Merkbekendheid", "Overweging", "Voorkeur", "Conversie"])
+        budget = st.number_input("Totale Budget (€)", min_value=1000, max_value=1000000, value=50000)
+    with col3:
+        start_datum = st.date_input("Startdatum")
+        eind_datum = st.date_input("Einddatum")
+        freq_cap = st.slider("Max. frequentie per gebruiker", min_value=1, max_value=20, value=5, step=1)
+    
+    st.markdown("### 🎯 Media Kanalen Selectie")
+    kanalen = st.multiselect("Selecteer de mediakanalen", ["CTV", "Video", "Display", "DOOH", "Social"])
+    budget_verdeling = {kanaal: st.slider(f"Budget Allocatie {kanaal} (%)", 0, 100, 20, step=5) for kanaal in kanalen}
+    
+    if st.button("📝 Genereer Plan"):
+        st.session_state["kanalen"] = kanalen
+        st.session_state["budget_verdeling"] = budget_verdeling
+        st.session_state["budget"] = budget
+        st.success("Plan gegenereerd! Ga naar de volgende tab voor voorspellingen.")
 
-# AI Media Plan Tab
 with tab2:
-    st.subheader("AI-Generated Media Plan")
-    if selected_audience_goal and selected_channels:
-        predicted_campaign = data[(data['Audience_Segment'].isin(selected_audience_goal)) &
-                                  (data['Campaign'].isin(selected_channels)) &
-                                  (data['Budget'] <= selected_budget) &
-                                  (data['Frequency'] <= selected_frequency) &
-                                  (data['CPM'] <= selected_cpm_cap)]
-        predicted_campaign = predicted_campaign.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(5)
-        if not predicted_campaign.empty:
-            st.dataframe(predicted_campaign[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Audience_Segment', 'Conversion_Likelihood', 'CPM', 'Frequency']])
-        else:
-            st.write("No optimal campaign found based on current constraints. Try adjusting your inputs.")
+    st.subheader("📈 Voorspellingen & Scenario’s")
+    if "kanalen" in st.session_state and st.session_state["kanalen"]:
+        cpm_values = {"CTV": 35, "Video": 20, "Display": 10, "DOOH": 25, "Social": 5}
+        brand_uplift_factors = {"CTV": 0.8, "Video": 0.6, "Display": 0.4, "DOOH": 0.7, "Social": 0.5}
+        
+        voorspellingen = pd.DataFrame({
+            "Kanaal": st.session_state["kanalen"],
+            "CPM (€)": [cpm_values[k] for k in st.session_state["kanalen"]],
+            "Brand Uplift Factor": [brand_uplift_factors[k] for k in st.session_state["kanalen"]]
+        })
+        
+        voorspellingen["Impressies"] = st.session_state["budget"] / voorspellingen["CPM (€)"] * 1000
+        voorspellingen["Verwachte Brand Uplift (%)"] = voorspellingen["Brand Uplift Factor"] * (voorspellingen["Impressies"] / 1_000_000) * 100
+        
+        st.markdown("### 🔍 Media Insights")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("**Brand Awareness**")
+            st.markdown(f'<p class="metric-value">+{voorspellingen["Verwachte Brand Uplift (%)"].max():.1f}%</p>', unsafe_allow_html=True)
+        with col2:
+            st.markdown("**Best Presterende Kanaal**")
+            best_kanaal = voorspellingen.loc[voorspellingen["Verwachte Brand Uplift (%)"].idxmax()]["Kanaal"]
+            st.markdown(f'<p class="metric-value">{best_kanaal}</p>', unsafe_allow_html=True)
+        with col3:
+            st.markdown("**Totale Impressies**")
+            total_impressions = voorspellingen["Impressies"].sum()
+            st.markdown(f'<p class="metric-value">{total_impressions:,.0f}</p>', unsafe_allow_html=True)
+        
+        fig = px.bar(voorspellingen, x="Kanaal", y="Verwachte Brand Uplift (%)", color="Kanaal", title="Verwachte Brand Uplift per Kanaal")
+        st.plotly_chart(fig)
 
-# Insights & Adjustments Tab
 with tab3:
-    st.subheader("Media Plan Insights & Adjustments")
-    st.write("Visualizing media impact and optimizing campaign strategy")
-    
-    # Visualization - Budget vs. Lift Difference
-    fig, ax = plt.subplots()
-    sns.scatterplot(data=data, x='Budget', y='Lift_Difference', hue='Campaign', ax=ax)
-    plt.xlabel("Budget")
-    plt.ylabel("Brand Lift")
-    plt.title("Impact of Budget on Brand Lift by Media Channel")
-    st.pyplot(fig)
-    
-    # Manual Adjustments
-    selected_channel_adjust = st.selectbox("Adjust Media Channel", options=campaigns)
-    adjusted_budget = st.number_input("Adjust Budget", min_value=5000, max_value=50000, step=5000)
-    adjusted_frequency = st.number_input("Adjust Frequency", min_value=1, max_value=10, step=1)
-    adjusted_cpm = st.number_input("Adjust CPM", min_value=5, max_value=50, step=1)
-    st.write(f"Your manually adjusted media allocation: {selected_channel_adjust} - Budget: {adjusted_budget}, Frequency: {adjusted_frequency}, CPM: {adjusted_cpm}")
-
-# DSP Activation Simulation
-st.subheader("Activate in DSP")
-if st.button("Generate DSP Export File"):
-    export_data = pd.DataFrame({
-        'Campaign Name': [campaign_name],
-        'Objective': [selected_objective],
-        'Audience': [', '.join(selected_audience_goal)],
-        'Budget': [adjusted_budget],
-        'Frequency': [adjusted_frequency],
-        'CPM': [adjusted_cpm],
-        'Media Channels': [', '.join(selected_channels)]
-    })
-    export_data.to_csv("media_plan.csv", index=False)
-    st.success("Your media plan has been exported for DSP activation!")
+    st.subheader("🚀 Activatie & Export")
+    if "kanalen" in st.session_state and st.session_state["kanalen"]:
+        st.write("Klaar om naar DSP te exporteren!")
+        if st.button("📡 Upload naar DSP"):
+            st.success("✅ Campagne succesvol geüpload naar DSP!")
