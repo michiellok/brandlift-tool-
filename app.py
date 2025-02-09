@@ -23,6 +23,15 @@ cpm = np.random.uniform(5, 50, size=200)
 frequency = np.random.randint(1, 10, size=200)
 campaign_duration = np.random.randint(7, 90, size=200)  # Campaign duration in days
 
+# Benchmark Data (Simulated Industry Averages)
+benchmark_data = {
+    'Campaign': campaigns,
+    'Avg_Brand_Lift': [0.08, 0.06, 0.07, 0.05, 0.09],
+    'Avg_Attention_Score': [0.7, 0.65, 0.75, 0.6, 0.8],
+    'Avg_Conversion_Likelihood': [0.15, 0.12, 0.18, 0.1, 0.2]
+}
+benchmark_df = pd.DataFrame(benchmark_data)
+
 data = pd.DataFrame({
     'Campaign': media_channel,
     'Budget': budgets,
@@ -54,39 +63,11 @@ st.write("Optimize your media investment based on impact, attention, and audienc
 st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 
 # Tabs for structured navigation
-tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Analysis"])
+tab1, tab2, tab3 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Benchmarking"])
 
-# Campaign Briefing Tab
-with tab1:
-    st.subheader("Define Campaign Objectives")
-    campaign_name = st.text_input("Campaign Name")
-    selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
-    selected_audience_goal = st.multiselect("Select Audience Targets:", options=audience_segments)
-    selected_budget = st.number_input("Enter Total Budget", min_value=5000, max_value=50000, step=5000)
-    selected_frequency = st.number_input("Enter Desired Frequency", min_value=1, max_value=10, step=1)
-    selected_cpm_cap = st.number_input("Enter CPM Cap", min_value=5, max_value=50, step=1)
-    selected_campaign_duration = st.number_input("Enter Campaign Duration (days)", min_value=7, max_value=90, step=1)
-    selected_channels = st.multiselect("Select Media Channels:", options=campaigns)
-
-# AI Media Plan Tab
-with tab2:
-    st.subheader("AI-Generated Media Plan")
-    if selected_audience_goal and selected_channels:
-        predicted_campaign = data[(data['Audience_Segment'].isin(selected_audience_goal)) &
-                                  (data['Campaign'].isin(selected_channels)) &
-                                  (data['Budget'] <= selected_budget) &
-                                  (data['Frequency'] <= selected_frequency) &
-                                  (data['CPM'] <= selected_cpm_cap) &
-                                  (data['Campaign_Duration'] <= selected_campaign_duration)]
-        predicted_campaign = predicted_campaign.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(5)
-        if not predicted_campaign.empty:
-            st.dataframe(predicted_campaign[['Campaign', 'Budget', 'Lift_Difference', 'Attention_Score', 'Audience_Segment', 'Conversion_Likelihood', 'CPM', 'Frequency', 'Campaign_Duration']])
-        else:
-            st.write("No optimal campaign found based on current constraints. Try adjusting your inputs.")
-
-# Insights & Analysis Tab
+# Insights & Benchmarking Tab
 with tab3:
-    st.subheader("Media Plan Insights & Optimization Suggestions")
+    st.subheader("Media Plan Insights & Industry Benchmarking")
     
     # Visualization - Budget vs. Lift Difference
     fig, ax = plt.subplots()
@@ -102,13 +83,16 @@ with tab3:
     sns.heatmap(data[['Lift_Difference', 'Attention_Score', 'Budget', 'Conversion_Likelihood']].corr(), annot=True, cmap='coolwarm', ax=ax)
     st.pyplot(fig)
     
+    # Industry Benchmark Comparison
+    st.subheader("Industry Benchmarks vs. Campaign Performance")
+    merged_df = data.groupby('Campaign')[['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood']].mean().reset_index()
+    merged_df = merged_df.merge(benchmark_df, on='Campaign', suffixes=('_Actual', '_Benchmark'))
+    st.dataframe(merged_df)
+    
     # AI Recommendations
     st.subheader("Optimization Suggestions")
     highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
     st.write(f"Based on our analysis, the best performing media channel is **{highest_lift['Campaign']}** with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
     st.write("Consider allocating more budget to high-performing channels while optimizing attention scores for maximum impact.")
-
-
-
-
-
+    
+    st.write("Comparing your results against industry benchmarks, channels performing below industry averages should be optimized or reallocated for better efficiency.")
