@@ -104,8 +104,8 @@ with tab3:
 
     st.subheader("📊 Brand Lift Comparison")
     fig, ax = plt.subplots()
-    sns.barplot(data=merged_df, x='Campaign', y='Lift_Difference_Actual', label='Actual', color='blue')
-    sns.barplot(data=merged_df, x='Campaign', y='Avg_Brand_Lift', label='Benchmark', color='red', alpha=0.5)
+    sns.barplot(data=merged_df, x='Campaign', y='Lift_Difference_Actual', color='blue', label='Actual')
+    sns.barplot(data=merged_df, x='Campaign', y='Avg_Brand_Lift', color='red', alpha=0.5, label='Benchmark')
     plt.legend()
     st.pyplot(fig)
 
@@ -121,6 +121,7 @@ with tab4:
     
     highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
     st.success(f"🚀 AI suggests increasing investment in **{highest_lift['Campaign']}**, with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+
 
 
 
