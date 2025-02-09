@@ -7,6 +7,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error
 
+# Streamlit UI Config
+st.set_page_config(page_title="Brand Impact & Media Planner", layout="wide")
+
 # Generate Simulated Dummy Data
 np.random.seed(42)
 campaigns = ['CTV', 'DOOH', 'Social', 'Display', 'Retail Media']
@@ -56,30 +59,30 @@ y_pred = model.predict(X_test)
 mae = mean_absolute_error(y_test, y_pred)
 
 # Streamlit Dashboard UI
-st.title("AI-Powered Media Planning Dashboard")
-st.write("Optimize your media investment based on impact, attention, and audience insights")
-
-# Model Performance Display
-st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
+st.title("Brand Impact & Media Planning Dashboard")
+st.write("Maximize your media investment with AI-driven insights and optimization.")
 
 # Tabs for structured navigation
-tab1, tab2, tab3, tab4 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Benchmarking", "Deep-Dive Analysis"])
+tab1, tab2, tab3, tab4 = st.tabs(["📌 Campaign Setup", "📊 AI Media Plan", "📈 Insights & Benchmarking", "🔍 Deep-Dive Analysis"])
 
-# Campaign Briefing Tab
+# Campaign Setup Tab
 with tab1:
-    st.subheader("Define Campaign Objectives")
-    campaign_name = st.text_input("Campaign Name")
-    selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
-    selected_audience_goal = st.multiselect("Select Audience Targets:", options=audience_segments)
-    selected_budget = st.number_input("Enter Total Budget", min_value=5000, max_value=50000, step=5000)
-    selected_frequency = st.number_input("Enter Desired Frequency", min_value=1, max_value=10, step=1)
-    selected_cpm_cap = st.number_input("Enter CPM Cap", min_value=5, max_value=50, step=1)
-    selected_campaign_duration = st.number_input("Enter Campaign Duration (days)", min_value=7, max_value=90, step=1)
-    selected_channels = st.multiselect("Select Media Channels:", options=campaigns)
+    st.header("🎯 Define Campaign Objectives")
+    col1, col2 = st.columns(2)
+    with col1:
+        campaign_name = st.text_input("Campaign Name")
+        selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
+        selected_audience_goal = st.multiselect("Select Audience Targets:", options=audience_segments)
+    with col2:
+        selected_budget = st.slider("Total Budget", 5000, 50000, 25000)
+        selected_frequency = st.slider("Desired Frequency", 1, 10, 3)
+        selected_cpm_cap = st.slider("CPM Cap", 5, 50, 25)
+        selected_campaign_duration = st.slider("Campaign Duration (days)", 7, 90, 30)
+    selected_channels = st.multiselect("Select Media Channels:", options=campaigns, default=campaigns)
 
 # AI Media Plan Tab
 with tab2:
-    st.subheader("AI-Generated Media Plan")
+    st.header("🤖 AI-Generated Media Plan")
     if selected_audience_goal and selected_channels:
         filtered_campaigns = data[(data['Audience_Segment'].isin(selected_audience_goal)) &
                                   (data['Campaign'].isin(selected_channels)) &
@@ -88,21 +91,28 @@ with tab2:
                                   (data['CPM'] <= selected_cpm_cap) &
                                   (data['Campaign_Duration'] <= selected_campaign_duration)]
         filtered_campaigns = filtered_campaigns.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(5)
-        if not filtered_campaigns.empty:
-            st.dataframe(filtered_campaigns)
-        else:
-            st.write("No optimal campaign found. Adjust your inputs.")
+        st.dataframe(filtered_campaigns)
+    else:
+        st.warning("⚠️ Please complete the Campaign Setup first!")
 
 # Insights & Benchmarking Tab
 with tab3:
-    st.subheader("Industry Benchmarks vs. Actual Performance")
+    st.header("📈 Industry Benchmarks vs. Campaign Performance")
     merged_df = data.groupby('Campaign')[['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood']].mean().reset_index()
     merged_df = merged_df.merge(benchmark_df, on='Campaign', suffixes=('_Actual', '_Benchmark'))
     st.dataframe(merged_df)
 
+    st.subheader("📊 Brand Lift Comparison")
+    fig, ax = plt.subplots()
+    sns.barplot(data=merged_df, x='Campaign', y='Lift_Difference_Actual', label='Actual', color='blue')
+    sns.barplot(data=merged_df, x='Campaign', y='Avg_Brand_Lift', label='Benchmark', color='red', alpha=0.5)
+    plt.legend()
+    st.pyplot(fig)
+
 # Deep-Dive Analysis Tab
 with tab4:
-    st.subheader("Advanced Media Performance Analysis")
+    st.header("🔍 Advanced Media Performance Analysis")
+    st.subheader("🧐 Attention Score vs. Conversion Likelihood")
     fig, ax = plt.subplots()
     sns.scatterplot(data=data, x='Attention_Score', y='Conversion_Likelihood', hue='Campaign', ax=ax)
     plt.xlabel("Attention Score")
@@ -110,6 +120,7 @@ with tab4:
     st.pyplot(fig)
     
     highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
-    st.write(f"AI suggests increasing investment in **{highest_lift['Campaign']}**, with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+    st.success(f"🚀 AI suggests increasing investment in **{highest_lift['Campaign']}**, with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+
 
 
