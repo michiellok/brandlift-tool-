@@ -65,35 +65,51 @@ st.metric(label="Model Mean Absolute Error (MAE)", value=f"{mae:.4f}")
 # Tabs for structured navigation
 tab1, tab2, tab3, tab4 = st.tabs(["Campaign Briefing", "AI Media Plan", "Insights & Benchmarking", "Deep-Dive Analysis"])
 
+# Campaign Briefing Tab
+with tab1:
+    st.subheader("Define Campaign Objectives")
+    campaign_name = st.text_input("Campaign Name")
+    selected_objective = st.selectbox("Select Campaign Objective:", options=objectives)
+    selected_audience_goal = st.multiselect("Select Audience Targets:", options=audience_segments)
+    selected_budget = st.number_input("Enter Total Budget", min_value=5000, max_value=50000, step=5000)
+    selected_frequency = st.number_input("Enter Desired Frequency", min_value=1, max_value=10, step=1)
+    selected_cpm_cap = st.number_input("Enter CPM Cap", min_value=5, max_value=50, step=1)
+    selected_campaign_duration = st.number_input("Enter Campaign Duration (days)", min_value=7, max_value=90, step=1)
+    selected_channels = st.multiselect("Select Media Channels:", options=campaigns)
+
+# AI Media Plan Tab
+with tab2:
+    st.subheader("AI-Generated Media Plan")
+    if selected_audience_goal and selected_channels:
+        filtered_campaigns = data[(data['Audience_Segment'].isin(selected_audience_goal)) &
+                                  (data['Campaign'].isin(selected_channels)) &
+                                  (data['Budget'] <= selected_budget) &
+                                  (data['Frequency'] <= selected_frequency) &
+                                  (data['CPM'] <= selected_cpm_cap) &
+                                  (data['Campaign_Duration'] <= selected_campaign_duration)]
+        filtered_campaigns = filtered_campaigns.sort_values(by=['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood'], ascending=False).head(5)
+        if not filtered_campaigns.empty:
+            st.dataframe(filtered_campaigns)
+        else:
+            st.write("No optimal campaign found. Adjust your inputs.")
+
+# Insights & Benchmarking Tab
+with tab3:
+    st.subheader("Industry Benchmarks vs. Actual Performance")
+    merged_df = data.groupby('Campaign')[['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood']].mean().reset_index()
+    merged_df = merged_df.merge(benchmark_df, on='Campaign', suffixes=('_Actual', '_Benchmark'))
+    st.dataframe(merged_df)
+
 # Deep-Dive Analysis Tab
 with tab4:
     st.subheader("Advanced Media Performance Analysis")
-    
-    # Performance Distribution by Campaign Type
-    st.subheader("Brand Lift Distribution by Campaign Type")
-    fig, ax = plt.subplots()
-    sns.boxplot(data=data, x='Campaign', y='Lift_Difference', ax=ax)
-    plt.xlabel("Campaign Channel")
-    plt.ylabel("Brand Lift Difference")
-    st.pyplot(fig)
-    
-    # Attention vs. Conversion Scatterplot
-    st.subheader("Correlation Between Attention and Conversion Likelihood")
     fig, ax = plt.subplots()
     sns.scatterplot(data=data, x='Attention_Score', y='Conversion_Likelihood', hue='Campaign', ax=ax)
     plt.xlabel("Attention Score")
     plt.ylabel("Conversion Likelihood")
     st.pyplot(fig)
     
-    # Performance Against Benchmarks
-    st.subheader("Industry Benchmarks vs. Actual Performance")
-    merged_df = data.groupby('Campaign')[['Lift_Difference', 'Attention_Score', 'Conversion_Likelihood']].mean().reset_index()
-    merged_df = merged_df.merge(benchmark_df, on='Campaign', suffixes=('_Actual', '_Benchmark'))
-    st.dataframe(merged_df)
-    
-    # AI Recommendations
-    st.subheader("Strategic Optimization Suggestions")
     highest_lift = data.sort_values(by='Lift_Difference', ascending=False).iloc[0]
-    st.write(f"Our AI recommends increasing investment in **{highest_lift['Campaign']}**, which has an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
-    st.write("To improve campaign efficiency, consider reallocating budgets from underperforming channels and optimizing CPM values.")
+    st.write(f"AI suggests increasing investment in **{highest_lift['Campaign']}**, with an expected brand lift of **{highest_lift['Lift_Difference']:.2%}**.")
+
 
